@@ -17,6 +17,10 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
+    public function microposts()
+    {
+        return $this->hasMany(Micropost::class);
+    }
     protected $fillable = [
         'name',
         'email',
