@@ -37,7 +37,7 @@ class User extends Authenticatable
      */
     public function loadRelationshipCounts()
     {
-        $this->loadCount(['microposts', 'followings', 'followers']);
+        $this->loadCount(['microposts', 'followings', 'followers','favorites']);
     }
 
     /**
@@ -54,6 +54,22 @@ class User extends Authenticatable
     public function followers()
     {
         return $this->belongsToMany(User::class, 'user_follow', 'follow_id', 'user_id')->withTimestamps();
+    }
+
+    /**
+ * このユーザーがお気に入りに追加した投稿。（Micropostモデルとの多対多の関係）
+ */
+    public function favorites()
+    {
+    return $this->belongsToMany(Micropost::class, 'favorites', 'user_id', 'micropost_id')->withTimestamps();
+    }
+
+    /**
+ * この投稿をお気に入りに追加したユーザー。（Userモデルとの多対多の関係）
+ */
+    public function favorite_users()
+    {
+    return $this->belongsToMany(User::class, 'favorites', 'micropost_id', 'user_id')->withTimestamps();
     }
 
 
@@ -107,6 +123,46 @@ class User extends Authenticatable
     }
 
     /**
+     * 指定された Micropost をお気に入りに追加する
+     */
+    public function favorite($micropostId)
+    {
+        $exist = $this->is_favoriting($micropostId);
+        $its_me = $this->id === Micropost::find($micropostId)?->user_id;
+
+        if ($exist) {
+            return false;
+        } else {
+            $this->favorites()->attach($micropostId);
+            return true;
+        }
+    }
+
+    /**
+     * 指定された Micropost をお気に入りから削除する
+     */
+    public function unfavorite($micropostId)
+    {
+        $exist = $this->is_favoriting($micropostId);
+        $its_me = $this->id === Micropost::find($micropostId)?->user_id;
+
+        if ($exist) {
+            $this->favorites()->detach($micropostId);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * 指定された Micropost をこのユーザーがお気に入りに追加しているか確認
+     */
+    public function is_favoriting($micropostId)
+    {
+        return $this->favorites()->where('micropost_id', $micropostId)->exists();
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -114,6 +170,11 @@ class User extends Authenticatable
     public function microposts()
     {
         return $this->hasMany(Micropost::class);
+    }
+
+    public function is_favorite($micropostId)
+    {
+    return $this->favorites()->where('micropost_id', $micropostId)->exists();
     }
 
     protected $fillable = [
