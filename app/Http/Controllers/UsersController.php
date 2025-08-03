@@ -16,6 +16,29 @@ class UsersController extends Controller
      * @param  $id  ユーザーのid
      * @return \Illuminate\Http\Response
      */
+
+    public function index()
+    {
+    // 全ユーザーを取得（ページネーションつき）
+    $users = User::paginate(10);
+
+    // users.indexビューに$usersを渡す
+    return view('users.index', ['users' => $users]);
+    }
+
+    public function show($id)
+    {
+        $user = User::findOrFail($id);
+        $user->loadRelationshipCounts();
+
+        $microposts = $user->microposts()->orderBy('created_at', 'desc')->paginate(10);
+
+        return view('users.show', [
+            'user' => $user,
+            'microposts' => $microposts,
+        ]);
+    }
+
     public function followings($id)
     {
         // idの値でユーザーを検索して取得
